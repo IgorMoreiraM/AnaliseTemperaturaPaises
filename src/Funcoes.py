@@ -43,14 +43,16 @@ def identificar_outliers(coluna, peso):  # função para identificar outliers
     outliers = coluna[(coluna < limite_inferior) | (coluna > limite_superior)]
     return outliers
 
+def identificar_outliers_limite_superior (coluna):
+  Q1 =coluna.quantile(0.25)
+  Q3 = coluna.quantile(0.75)
 
-def remover_outliers(dados, peso):
-    Q1 = dados.quantile(0.25)
-    Q3 = dados.quantile(0.75)
-    IQR = Q3 - Q1
-    limite_inferior = Q1 - peso * IQR
-    limite_superior = Q3 + 3 * IQR
-    return dados[(dados >= limite_inferior) & (dados <= limite_superior)]
+  IQR = Q3-Q1
+  limite_superior = Q3 + 3 * IQR
+
+  outliers = coluna[(coluna > limite_superior)]
+  return outliers
+
 
 def gerar_boxplot(pais, dados_pais): # função que gera boxplot
 
@@ -86,21 +88,23 @@ def analisar_periodo(dataframe, coluna_data):
     return mes_inicial, mes_final
     
 
-def identificar_meses_faltantes(dataframe):
-    mes_inicial = dataframe['ano_mes'].min()
-    mes_final = dataframe['ano_mes'].max()
+def identificar_meses_faltantes(dataframe, coluna_data):
+    primeiro_mes = dataframe['ano_mes'].min()
+    ultimo_mes = dataframe['ano_mes'].max()
     
-    todos_os_meses = pd.period_range(start=mes_inicial, end=mes_final, freq='M')
+    todos_os_meses_esperados = pd.period_range(start=primeiro_mes, end=ultimo_mes, freq='M')
     
-    meses_existentes = dataframe['ano_mes'].unique()
+    meses_existentes = set(dataframe['ano_mes'].unique())
     
-    meses_faltantes = todos_os_meses.difference(meses_existentes)
+    meses_faltantes = todos_os_meses_esperados.difference(meses_existentes)
     
-    print(f"Numero de meses faltante: {len(meses_faltantes)}")
-    print("Meses faltante: ")
-    for mes in meses_faltantes:
-        print (str(mes))
-
+    if not meses_faltantes.empty:
+        print(f"\nMeses faltantes: {len(meses_faltantes)}")
+        for mes in meses_faltantes:
+            print(f"- {mes}")
+    else:
+        print("\nNão há meses faltantes no conjunto de dados!")
+    
     return meses_faltantes
 
 def interpolar_dados(dataframe):
@@ -110,32 +114,4 @@ def interpolar_dados(dataframe):
     
     return dataframe
 
-def gerar_histogramas_interpolados(pais, dados_pais):
-    
-    plt.figure(figsize=(12, 6))
-
-    plt.subplot(1, 2, 1)
-    plt.hist(
-        dados_pais["Average surface temperature daily"],
-        bins=30,
-        color="green",
-        edgecolor="black",
-    )
-    plt.title(f"Média Diária Interpolada - {pais}")
-    plt.xlabel("Temperatura (°C)")
-    plt.ylabel("Frequência")
-
-
-    plt.subplot(1, 2, 2)
-    plt.hist(
-        dados_pais["Average surface temperature monthly"],
-        bins=30,
-        color="red",
-        edgecolor="black",
-    )
-    plt.title(f"Média Mensal Interpolada - {pais}")
-    plt.xlabel("Temperatura (°C)")
-
-    plt.tight_layout()
-    plt.show()
 
